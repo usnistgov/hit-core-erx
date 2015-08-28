@@ -2,3 +2,5 @@ nht-core-services-hl7-v2/.settings/org.eclipse.core.resources.prefs
 nht-core-services-hl7-v2/.settings/org.eclipse.jdt.core.prefs
 nht-core-services-hl7-v2/.settings/org.eclipse.m2e.core.prefs
 /bin
+hit-core-hl7v2-domain/target
+hit-core-hl7v2-service/target
