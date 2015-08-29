@@ -1,8 +1,11 @@
 package gov.nist.hit.core.hl7v2.service.message;
 
 import hl7.v2.instance.Message;
+import edi.ncpdp.script.parser.impl.DefaultNCPDPParser;
+import edi.ncpdp.script.parser.impl.DefaultNCPDPParser$class;
 import hl7.v2.parser.impl.DefaultParser;
 import hl7.v2.parser.impl.DefaultParser$class;
+import hl7.v2.parser.Parser;
 import scala.util.Try;
 
 public class JParser implements DefaultParser {
@@ -14,10 +17,9 @@ public class JParser implements DefaultParser {
    * @param model - The message model
    * @return The message instance model encapsulated in a scala `scala.util.Try`
    */
-  @Override
   @SuppressWarnings("unchecked")
   public Try<Message> parse(String message, hl7.v2.profile.Message model) {
-    return DefaultParser$class.parse(this, message, model);
+    return DefaultNCPDPParser$class.parse(message, model);
   }
 
 
@@ -28,4 +30,5 @@ public class JParser implements DefaultParser {
     return parse(message, model).get();
   }
 
+    
 }
