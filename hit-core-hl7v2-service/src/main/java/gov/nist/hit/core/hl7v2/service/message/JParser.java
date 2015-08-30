@@ -8,7 +8,7 @@ import hl7.v2.parser.impl.DefaultParser$class;
 import hl7.v2.parser.Parser;
 import scala.util.Try;
 
-public class JParser implements DefaultParser {
+public class JParser implements DefaultNCPDPParser {
 
   /**
    * A java friendly way to call the `parse` method of the default parser implementation
@@ -19,7 +19,7 @@ public class JParser implements DefaultParser {
    */
   @SuppressWarnings("unchecked")
   public Try<Message> parse(String message, hl7.v2.profile.Message model) {
-    return DefaultNCPDPParser$class.parse(message, model);
+    return DefaultNCPDPParser$class.parse(this,message, model);
   }
 
 
