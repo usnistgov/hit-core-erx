@@ -32,7 +32,7 @@ import hl7.v2.profile.Segment;
 import hl7.v2.profile.SegmentRef;
 import hl7.v2.profile.Usage;
 import hl7.v2.profile.ValueSetSpec;
-import hl7.v2.profile.XMLDeserializer;
+import ncpdp.script.profile.XMLDeserializer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,7 +92,9 @@ public class ProfileParserImpl extends ProfileParser {
         p = cachedIntegrationProfilesMap.get(integrationProfileId);
       } else {
         InputStream profileStream = IOUtils.toInputStream(integrationProfileXml);
+        System.out.println("ppi 1");
         p = XMLDeserializer.deserialize(profileStream).get();
+        System.out.println("ppi 2");
         cachedIntegrationProfilesMap.put(integrationProfileId, p);
       }
       Message m = p.messages().apply(conformanceProfileId);
