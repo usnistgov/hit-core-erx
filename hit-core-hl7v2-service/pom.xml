@@ -42,6 +42,12 @@
 		
         
 	</dependencies>
+	<repositories>
+		<repository>
+			<id>nexus-internal</id>
+			<url>http://vm-070.nist.gov:8081/nexus/content/groups/public</url>
+		</repository>
+	</repositories>
 	<build>
 		<pluginManagement>
 			<plugins>
