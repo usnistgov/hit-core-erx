@@ -9,11 +9,14 @@
  * works bear some notice that they are derived from it, and any modified versions bear some notice
  * that they have been modified.
  */
-package gov.nist.hit.core.hl7v2.service.message;
+package gov.nist.hit.core.hl7v2.service;
 
 import gov.nist.hit.core.domain.MessageElement;
 import gov.nist.hit.core.domain.MessageModel;
-import gov.nist.hit.core.hl7v2.domain.message.MessageElementData;
+import gov.nist.hit.core.domain.MessageParserCommand;
+import gov.nist.hit.core.domain.TestContext;
+import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
+import gov.nist.hit.core.hl7v2.domain.MessageElementData;
 import gov.nist.hit.core.hl7v2.domain.util.Util;
 import gov.nist.hit.core.service.MessageParser;
 import gov.nist.hit.core.service.exception.MessageParserException;
@@ -31,28 +34,23 @@ import hl7.v2.instance.SimpleField;
 import hl7.v2.profile.Profile;
 import hl7.v2.profile.Range;
 import hl7.v2.profile.Req;
-import ncpdp.script.profile.XMLDeserializer;
+import hl7.v2.profile.XMLDeserializer;
 
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.springframework.stereotype.Service;
 
 import scala.collection.Iterator;
 import scala.collection.immutable.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 
  * @author Harold Affo
  * 
  */
-@Service("er7MessageParser")
-public class Er7MessageParser implements MessageParser {
-  static final Logger logger = LoggerFactory.getLogger(Er7MessageParser.class);
-
+public abstract class HL7V2MessageParser implements MessageParser {
 
   private final static String SEGMENT = "SEGMENT";
   private final static String FIELD = "FIELD";
@@ -63,35 +61,38 @@ public class Er7MessageParser implements MessageParser {
   private final static String NODE_COMPONENT = "component";
   private final static String NODE_SUB_COMPONENT = "subcomponent";
 
-  /**
-	 * 
+  /** 
+	 *  
 	 */
   @Override
-  public MessageModel parse(String er7Message, String... options) throws MessageParserException {
+  public MessageModel parse(TestContext context, MessageParserCommand command)
+      throws MessageParserException {
     try {
-      logger.debug("p-0");
-      System.out.println("0-sys");
-      String profileXml = options[0];
-      if (options.length == 1) {
-        throw new MessageParserException("No Conformance Profile Provided to Parse the Message");
+      if (context instanceof HL7V2TestContext) {
+        HL7V2TestContext testContext = (HL7V2TestContext) context;
+        String er7Message = command.getContent();
+        String profileXml = testContext.getConformanceProfile().getIntegrationProfile().getXml();
+        if (profileXml == null) {
+          throw new MessageParserException("No Conformance Profile Provided to Parse the Message");
+        }
+        String conformanceProfileId = testContext.getConformanceProfile().getSourceId();
+        if (!"".equals(er7Message) && er7Message != null && !"".equals(conformanceProfileId)) {
+          InputStream profileStream = IOUtils.toInputStream(profileXml);
+          Profile profile = XMLDeserializer.deserialize(profileStream).get();
+          JParser p = new JParser();
+          Message message = p.jparse(er7Message, profile.messages().apply(conformanceProfileId));
+          return parse(message, er7Message);
+        }
+      } else {
+        throw new MessageParserException(
+            "Invalid Context Provided. Expected Context is HL7V2TestContext but found "
+                + context.getClass().getSimpleName());
       }
-      String conformanceProfileId = options[1];
-      if (!"".equals(er7Message) && er7Message != null && !"".equals(conformanceProfileId)) {
-        logger.debug("p-1");
-        InputStream profileStream = IOUtils.toInputStream(profileXml);
-        logger.debug("p-2");
-        Profile profile = XMLDeserializer.deserialize(profileStream).get();
-        logger.debug("p-3");
-        JParser p = new JParser();
-        logger.debug("p-4");
-        Message message = p.jparse(er7Message, profile.messages().apply(conformanceProfileId));
-        logger.debug("p-5");
-        return toModel(message);
-      }
+
     } catch (RuntimeException e) {
-      throw new MessageParserException(e);
+      throw new MessageParserException(e.getMessage());
     } catch (Exception e) {
-      throw new MessageParserException(e);
+      throw new MessageParserException(e.getMessage());
     }
     return new MessageModel();
   }
@@ -101,7 +102,7 @@ public class Er7MessageParser implements MessageParser {
    * @param message
    * @return
    */
-  private MessageModel toModel(Message message) {
+  private MessageModel parse(Message message, String er7Message) {
     MessageElement root = new MessageElement();
     List<SegOrGroup> children = message.children();
     if (children != null && !children.isEmpty()) {
@@ -110,7 +111,17 @@ public class Er7MessageParser implements MessageParser {
         process(it.next(), "", root);
       }
     }
-    return new MessageModel(root);
+    return new MessageModel(root.getChildren(), getDelimeters(er7Message));
+  }
+
+  private Map<String, String> getDelimeters(String message) {
+    // String dString = "^~&";
+    Map<String, String> map = new HashMap<String, String>();
+    map.put("field", "^");
+    map.put("component", "~");
+    map.put("subcomponent", "&");
+    map.put("segment", "\n");
+    return map;
   }
 
   /**
