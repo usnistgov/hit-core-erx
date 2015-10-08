@@ -31,7 +31,7 @@ import hl7.v2.instance.SimpleField;
 import hl7.v2.profile.Profile;
 import hl7.v2.profile.Range;
 import hl7.v2.profile.Req;
-import hl7.v2.profile.XMLDeserializer;
+import ncpdp.script.profile.XMLDeserializer;
 
 import java.io.InputStream;
 
@@ -41,6 +41,9 @@ import org.springframework.stereotype.Service;
 import scala.collection.Iterator;
 import scala.collection.immutable.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 
  * @author Harold Affo
@@ -48,6 +51,8 @@ import scala.collection.immutable.List;
  */
 @Service("er7MessageParser")
 public class Er7MessageParser implements MessageParser {
+  static final Logger logger = LoggerFactory.getLogger(Er7MessageParser.class);
+
 
   private final static String SEGMENT = "SEGMENT";
   private final static String FIELD = "FIELD";
@@ -64,22 +69,29 @@ public class Er7MessageParser implements MessageParser {
   @Override
   public MessageModel parse(String er7Message, String... options) throws MessageParserException {
     try {
+      logger.debug("p-0");
+      System.out.println("0-sys");
       String profileXml = options[0];
       if (options.length == 1) {
         throw new MessageParserException("No Conformance Profile Provided to Parse the Message");
       }
       String conformanceProfileId = options[1];
       if (!"".equals(er7Message) && er7Message != null && !"".equals(conformanceProfileId)) {
+        logger.debug("p-1");
         InputStream profileStream = IOUtils.toInputStream(profileXml);
+        logger.debug("p-2");
         Profile profile = XMLDeserializer.deserialize(profileStream).get();
+        logger.debug("p-3");
         JParser p = new JParser();
+        logger.debug("p-4");
         Message message = p.jparse(er7Message, profile.messages().apply(conformanceProfileId));
+        logger.debug("p-5");
         return toModel(message);
       }
     } catch (RuntimeException e) {
-      throw new MessageParserException(e.getMessage());
+      throw new MessageParserException(e);
     } catch (Exception e) {
-      throw new MessageParserException(e.getMessage());
+      throw new MessageParserException(e);
     }
     return new MessageModel();
   }
